@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<title>Miscelánea Casa Krystal</title>
+	<link th:href="@{/css/bootstrap.min.css}" rel="stylesheet" />
+	<script type="text/javascript">
+		function cargarDatosModal(id) {
+			document.getElementById('exampleModalLabel').textContent = 'Actualizar categoria';
+			document.getElementById("idCategoriaInput").style.display = "block";
+            document.getElementById("idCategoriaLabel").style.display = "block";
+		    // Realizar una petición al backend para obtener los datos
+		     fetch('/categorias/' + id)
+		    	.then(response => response.json())
+		        .then(data => {
+		            // Llenar el modal con la información obtenida
+		        	document.getElementById('idCategoriaInput').value = data.idCategoria;
+		            document.getElementById('descripcionInput').value = data.descripcion;
+		        })
+		        .catch(error => console.error('Error al cargar los datos:', error));
+		}
+		function cargarModal() {
+			document.getElementById('idCategoriaInput').value = '';
+            document.getElementById('descripcionInput').value = '';
+            document.getElementById('exampleModalLabel').textContent = 'Agregar categoria';
+            document.getElementById("idCategoriaInput").style.display = "none";
+            document.getElementById("idCategoriaLabel").style.display = "none";
+            const modalElement = document.getElementById('categoriaModal');
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            return;
+		}
+		function enviar() {
+            const data = {
+            	idCategoria: document.getElementById('idCategoriaInput').value,
+            	descripcion: document.getElementById('descripcionInput').value
+            };
+
+            fetch('/categorias', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Error en la solicitud');
+                return response.text();
+            })
+            .then(result => {
+                alert('✅ ' + result);
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Ocurrió un error al enviar los datos.');
+            });
+        }
+	</script>
+</head>
+<body>
+
+	<!-- Incluir el Header -->
+	<div th:replace="fragments/header :: header"></div>
+
+	<main>
+		<br><br><br><br>
+		<div class="table-responsive">
+			<table class="table">
+				<thead class="table-secondary">
+					<tr>
+						<th scope="col">#</th>
+						<th scope="col">Categoria</th>
+						<th class="text-nowrap" style="width: 1%;">
+							<button type="button" class="btn btn-light" onclick="cargarModal()">Agregar</button>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="categoria : ${categorias}">
+						<th scope="row">
+							<a href="#" 
+								data-bs-toggle="modal" 
+								data-bs-target="#categoriaModal"
+								th:onclick="'cargarDatosModal(' + ${categoria.idCategoria} + ')'" 
+								th:text="${categoria.idCategoria}"></a>
+						</th>
+						<td th:text="${categoria.descripcion}"></td>
+						<td>
+							<a th:href="@{/categorias/eliminar/{id}(id=${categoria.idCategoria})}" 
+							   onclick="return confirm('¿Estás seguro de que deseas eliminar esta categoría?')">
+							   <img th:src="@{/img/eliminar.png}" alt="Eliminar" width="30" height="24" class="d-inline-block align-text-top">
+							</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</main>
+
+	<div class="modal fade" id="categoriaModal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-5" id="exampleModalLabel">Actualizar registro categoria: </h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					<form>
+						<div class="mb-3">
+							<label for="idCategoriaInput" class="col-form-label" id="idCategoriaLabel">No. categoría:</label>
+							<input type="text" class="form-control" id="idCategoriaInput" readonly>
+							
+							<label for="descripcionInput" class="col-form-label">Descripción:</label>
+							<input type="text" class="form-control" id="descripcionInput">
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary"
+						data-bs-dismiss="modal">Cerrar</button>
+					<button type="button" class="btn btn-primary" onclick="enviar()">Enviar</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Incluir el Footer -->
+	<div th:replace="fragments/footer :: footer"></div>
+
+	<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<title>Miscelánea Casa Krystal</title>
+	<link th:href="@{/css/bootstrap.min.css}" rel="stylesheet" />
+	<script type="text/javascript">
+		function cargarDatosModal(id) {
+			document.getElementById('exampleModalLabel').textContent = 'Actualizar proveedores';
+			document.getElementById("idProveedorInput").style.display = "block";
+            document.getElementById("idProveedorLabel").style.display = "block";
+		    // Realizar una petición al backend para obtener los datos
+		     fetch('/proveedores/' + id)
+		    	.then(response => response.json())
+		        .then(data => {
+		            // Llenar el modal con la información obtenida
+		        	document.getElementById('idProveedorInput').value = data.idProveedor;
+		            document.getElementById('marcaInput').value = data.marca;
+		        })
+		        .catch(error => console.error('Error al cargar los datos:', error));
+		}
+		function cargarModal() {
+			document.getElementById('idProveedorInput').value = '';
+			document.getElementById('nombreRepartidorInput').value = '';
+			document.getElementById('telefonoRepartidorInput').value = '';
+			document.getElementById('marcaSelect').value = '';
+			
+			document.querySelectorAll('#formProveedor input[type="checkbox"]').forEach(cb => {
+			    cb.checked = false;
+			});
+			document.querySelectorAll('#formProveedor input[type="radio"]').forEach(rb => {
+			    rb.checked = false;
+			});
+			
+            document.getElementById('exampleModalLabel').textContent = 'Agregar proveedor';
+            document.getElementById("idProveedorInput").style.display = "none";
+            document.getElementById("idProveedorLabel").style.display = "none";
+            
+            obtenerMarcas();
+            
+            const modalElement = document.getElementById('proveedorModal');
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            return;
+		}
+		
+		function enviar() {
+            const data = {
+           		marca: {
+   			        idMarca: document.getElementById('marcaSelect').value
+   			    },
+   			 	nombreContacto: document.getElementById('nombreRepartidorInput').value,
+   			 	telefonoContacto: document.getElementById('telefonoRepartidorInput').value,
+   			 	diasPedido: obtenerValoresCheckSeleccionados('diasPedido').join(','),
+   			 	periodicidadPedido: obtenerValorRadioSeleccionado('periodicidadPedido'),
+   			 	diasEntrega: obtenerValoresCheckSeleccionados('diasEntrega').join(','),
+   			 	periodicidadEntrega: obtenerValorRadioSeleccionado('periodicidadEntrega')
+            };
+
+            fetch('/proveedores', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Error en la solicitud');
+                return response.text();
+            })
+            .then(result => {
+                alert('✅ ' + result);
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Ocurrió un error al enviar los datos.');
+            });
+        }
+	</script>
+</head>
+<body>
+
+	<!-- Incluir el Header -->
+	<div th:replace="fragments/header :: header"></div>
+
+	<main>
+		<br><br><br><br>
+		<div class="table-responsive">
+			<table class="table">
+				<thead class="table-secondary">
+					<tr>
+						<th scope="col">#</th>
+						<th scope="col">Marca</th>
+						<th scope="col">Nombre repartidor</th>
+						<th scope="col">Telefono repartidor</th>
+						<th scope="col">Días de pedido</th>
+						<th scope="col">Periodicidad de pedido</th>
+						<th scope="col">Días de entrega</th>
+						<th scope="col">Periodicidad de entrega</th>
+						<th class="text-nowrap" style="width: 1%;">
+							<button type="button" class="btn btn-light" onclick="cargarModal()">Agregar</button>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="proveedor : ${proveedores}">
+						<th scope="row">
+							<a href="#" 
+								data-bs-toggle="modal" 
+								data-bs-target="#proveedorModal"
+								th:onclick="'cargarDatosModal(' + ${proveedor.idProveedor} + ')'" 
+								th:text="${proveedor.idProveedor}"></a>
+						</th>
+						<td th:text="${proveedor.marca.nombre}"></td>
+						<td th:text="${proveedor.nombreContacto}"></td>
+						<td th:text="${proveedor.telefonoContacto}"></td>
+						<td th:text="${proveedor.diasPedido}"></td>
+						<td th:text="${proveedor.periodicidadPedido}"></td>
+						<td th:text="${proveedor.diasEntrega}"></td>
+						<td th:text="${proveedor.periodicidadEntrega}"></td>
+						<td>
+							<a th:href="@{/proveedores/eliminar/{id}(id=${proveedor.idProveedor})}" 
+							   onclick="return confirm('¿Estás seguro de que deseas eliminar este proveedor?')">
+							   <img th:src="@{/img/eliminar.png}" alt="Eliminar" width="30" height="24" class="d-inline-block align-text-top">
+							</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</main>
+
+	<div class="modal fade" id="proveedorModal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-5" id="exampleModalLabel">Actualizar registro proveedor: </h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					<form id="formProveedor" novalidate>
+						<div class="mb-3">
+							<label for="idProveedorInput" class="col-form-label" id="idProveedorLabel">No. proveedor:</label>
+							<input type="text" class="form-control" id="idProveedorInput" readonly>
+							
+							<label for="marcaSelect" class="col-form-label" >Marca:</label>
+							<select id="marcaSelect" name="idMarca" class="form-select" required>
+							  <option value="" disabled selected hidden>Selecciona una marca</option>
+							</select>
+							<div class="invalid-feedback">La marca es obligatoria.</div>
+							
+							<label for="nombreRepartidorInput" class="col-form-label">Nombre repartidor:</label>
+							<input type="text" class="form-control" id="nombreRepartidorInput">
+							
+							<label for="telefonoRepartidorInput" class="col-form-label">Telefono repartidor:</label>
+							<input type="tel" id="telefonoRepartidorInput" name="celular" class="form-control" pattern="[0-9]{10}" 
+								maxlength="10" placeholder="Ej. 7717586925">
+							
+							<label for="diasPedido" class="form-label d-block">Días de pedido:</label>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasPedido[]" id="lunesCheck" value="LUN">
+							  <label class="form-check-label" for="lunesCheck">Lunes</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasPedido[]" id="martesCheck" value="MAR">
+							  <label class="form-check-label" for="martesCheck">Martes</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasPedido[]" id="miercolesCheck" value="MIE">
+							  <label class="form-check-label" for="miercolesCheck">Miercoles</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasPedido[]" id="juevesCheck" value="JUE">
+							  <label class="form-check-label" for="juevesCheck">Jueves</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasPedido[]" id="viernesCheck" value="VIE">
+							  <label class="form-check-label" for="viernesCheck">Viernes</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasPedido[]" id="sabadoCheck" value="SAB">
+							  <label class="form-check-label" for="sabadoCheck">Sabado</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasPedido[]" id="domingoCheck" value="DOM">
+							  <label class="form-check-label" for="domingoCheck">Domingo</label>
+							</div>
+							
+							<label for="periodicidadPedido" class="form-label d-block">Periodicidad pedido:</label>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="radio" name="periodicidadPedido" id="semanalRadio" value="SEM">
+							  <label class="form-check-label" for="semanalRadio">Semanal</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="radio" name="periodicidadPedido" id="quincenalRadio" value="QUI">
+							  <label class="form-check-label" for="quincenalRadio">Quincenal</label>
+							</div>
+							
+							<label for="diasEntrega" class="form-label d-block">Días de entrega:</label>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasEntrega[]" id="lunesCheck" value="LUN">
+							  <label class="form-check-label" for="lunesCheck">Lunes</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasEntrega[]" id="martesCheck" value="MAR">
+							  <label class="form-check-label" for="martesCheck">Martes</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasEntrega[]" id="miercolesCheck" value="MIE">
+							  <label class="form-check-label" for="miercolesCheck">Miercoles</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasEntrega[]" id="juevesCheck" value="JUE">
+							  <label class="form-check-label" for="juevesCheck">Jueves</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasEntrega[]" id="viernesCheck" value="VIE">
+							  <label class="form-check-label" for="viernesCheck">Viernes</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasEntrega[]" id="sabadoCheck" value="SAB">
+							  <label class="form-check-label" for="miercolesCheck">Sabado</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="checkbox" name="diasEntrega[]" id="domingoCheck" value="DOM">
+							  <label class="form-check-label" for="domingoCheck">Domingo</label>
+							</div>
+							
+							<label for="periodicidadEntrega" class="form-label d-block">Periodicidad entrega:</label>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="radio" name="periodicidadEntrega" id="semanalRadio" value="SEM">
+							  <label class="form-check-label" for="semanalRadio">Semanal</label>
+							</div>
+							<div class="form-check form-check-inline">
+							  <input class="form-check-input" type="radio" name="periodicidadEntrega" id="quincenalRadio" value="QUI">
+							  <label class="form-check-label" for="quincenalRadio">Quincenal</label>
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+						    <button type="submit" class="btn btn-primary">Enviar</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Incluir el Footer -->
+	<div th:replace="fragments/footer :: footer"></div>
+
+	<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+	<script th:src="@{/js/utilerias.js}"></script>
+	<script>
+	  (function () {
+	    'use strict'
+	    const form = document.getElementById('formProveedor');
+	    form.addEventListener('submit', function (event) {
+	    	console.log("Marca seleccionada:", document.getElementById('marcaSelect').value);
+	      if (!form.checkValidity()) {
+	        event.preventDefault()
+	        event.stopPropagation()
+	      } else {
+	        event.preventDefault(); // Previene recarga automática
+	        enviar(); // Tu función ya existente
+	      }
+	      form.classList.add('was-validated')
+	    }, false)
+	  })()
+	</script>
+</body>
+</html>

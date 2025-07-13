@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <!-- Propiedades generales -->
+    <Properties>
+        <!-- Define el nombre de la aplicación -->
+        <Property name="appName">pointofsale</Property>
+        <!-- Define el directorio donde se guardarán los logs -->
+        <Property name="logDir">logs</Property>
+    </Properties>
+
+    <!-- Configuración de Appenders -->
+    <Appenders>
+        <!-- Appender para escribir en un archivo -->
+        <File name="ErrorFileAppender" fileName="${logDir}/${appName}.log" append="true">
+            <PatternLayout>
+                <Pattern>%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <!-- Rota el archivo cuando alcance 10 MB -->
+                <SizeBasedTriggeringPolicy size="10MB" />
+            </Policies>
+        </File>
+    </Appenders>
+
+    <!-- Configuración de Loggers -->
+    <Loggers>
+        <!-- Logger raíz que solo escribe mensajes de nivel ERROR -->
+        <Root level="error">
+            <AppenderRef ref="ErrorFileAppender" />
+        </Root>
+    </Loggers>
+</Configuration>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Miscelánea Casa Krystal</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet" />
+</head>
+<body>
+
+    <!-- Incluir el Header -->
+    <div th:replace="fragments/header :: header"></div>
+
+    <main>
+        <h1>Bienvenido a la Página de Inicio</h1>
+        <p>Contenido de la página principal.</p>
+    </main>
+
+    <!-- Incluir el Footer -->
+    <div th:replace="fragments/footer :: footer"></div>
+    
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

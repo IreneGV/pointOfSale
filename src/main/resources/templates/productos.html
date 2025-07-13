@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<title>Miscelánea Casa Krystal</title>
+	<link th:href="@{/css/bootstrap.min.css}" rel="stylesheet" />
+	<script type="text/javascript">
+		function cargarDatosModal(id) {
+			document.getElementById('exampleModalLabel').textContent = 'Actualizar producto';
+			document.getElementById("idProductoInput").style.display = "block";
+            document.getElementById("idProductoLabel").style.display = "block";
+            
+            Promise.all([
+                cargarCategorias(),
+                cargarUnidaesMedida(),
+                obtenerMarcas()
+            ])
+            .then(() => {
+                return fetch('/productos/' + id);
+            })
+	    	.then(response => response.json())
+	        .then(data => {
+	        	document.getElementById('idProductoInput').value = data.idProducto || '';
+	            document.getElementById('descripcionInput').value = data.descripcion || '';
+	            document.getElementById('categoriaSelect').value = data.categoria?.idCategoria || '';
+	            document.getElementById('contenidoInput').value = data.contenido || '';
+	            document.getElementById('unidadMedidaSelect').value = data.unidadMedida?.idUnidadMedida || '';
+	            document.getElementById('marcaSelect').value = data.marca?.idMarca || '';
+	            document.getElementById('precioVentaInput').value = data.precioVenta || '';
+	            
+	            if (data.rutaImagen && data.rutaImagen.trim() !== '') {
+	                document.getElementById('imagenProducto').src = data.rutaImagen;
+	                document.getElementById('imagenProducto').style.display = 'block';
+	            } else {
+	                document.getElementById('imagenProducto').style.display = 'none';
+	            }
+	            
+	            document.getElementById('imagenInput').style.display = 'none';
+	        })
+	        .catch(error => console.error('Error al cargar los datos:', error));
+		}
+		
+		function cargarModal() {
+			document.getElementById('idProductoInput').value = '';
+			document.getElementById('descripcionInput').value = '';
+			document.getElementById('contenidoInput').value = '';
+			document.getElementById('precioVentaInput').value = '';
+			document.getElementById('exampleModalLabel').textContent = 'Agregar producto';
+			document.getElementById("idProductoInput").style.display = "none";
+            document.getElementById("idProductoLabel").style.display = "none";
+            document.getElementById('imagenProducto').style.display = 'none';
+    		document.getElementById('imagenInput').style.display = 'block';
+    		document.getElementById('checkActualizar').style.display = 'none';
+    		document.getElementById('labelActualizar').style.display = 'none';
+    		document.getElementById('marcaSelect').value = '';
+            
+			cargarCategorias();
+			cargarUnidaesMedida();
+			obtenerMarcas();
+            const modalElement = document.getElementById('productoModal');
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+		}
+		
+		function cargarCategorias(){
+			return fetch('/categorias/all')
+	        .then(response => {
+	            if (!response.ok) {
+	                throw new Error("Error al obtener las categorías");
+	            }
+	            return response.json();
+	        })
+	        .then(categorias => {
+	            const select = document.getElementById('categoriaSelect');
+	            select.innerHTML = '<option value="" disabled selected>Selecciona una categoría</option>'; // Limpiar opciones anteriores
+
+	            categorias.forEach(categoria => {
+	                const option = document.createElement('option');
+	                option.value = categoria.idCategoria;
+	                option.textContent = categoria.descripcion;
+	                select.appendChild(option);
+	            });
+	        })
+	        .catch(error => {
+	            console.error('Error al cargar las categorías:', error);
+	        });
+		}
+		
+		function cargarUnidaesMedida(){
+			return fetch('/unidadesmedidas/all')
+	        .then(response => {
+	            if (!response.ok) {
+	                throw new Error("Error al obtener las unidades de medida");
+	            }
+	            return response.json();
+	        })
+	        .then(unidadesMedida => {
+	            const select = document.getElementById('unidadMedidaSelect');
+	            select.innerHTML = '<option value="" disabled selected>Selecciona una unidad de medida</option>'; // Limpiar opciones anteriores
+
+	            unidadesMedida.forEach(unidadMedida => {
+	                const option = document.createElement('option');
+	                option.value = unidadMedida.idUnidadMedida;
+	                option.textContent = unidadMedida.codigo + ' - ' + unidadMedida.nombreUnidad;
+	                select.appendChild(option);
+	            });
+	        })
+	        .catch(error => {
+	            console.error('Error al cargar las unidades de medida:', error);
+	        });
+		}
+		
+		function enviar() {
+			const formData = new FormData();
+
+			const producto = {
+			    idProducto: document.getElementById('idProductoInput').value,
+			    descripcion: document.getElementById('descripcionInput').value,
+			    contenido: document.getElementById('contenidoInput').value,
+			    marca: {
+			        idMarca: document.getElementById('marcaSelect').value
+			    },
+			    precioVenta: document.getElementById('precioVentaInput').value,
+			    categoria: {
+			        idCategoria: document.getElementById('categoriaSelect').value
+			    },
+			    unidadMedida: {
+			        idUnidadMedida: document.getElementById('unidadMedidaSelect').value
+			    },
+			    rutaImagen: document.getElementById('imagenProducto').src
+			};
+
+			formData.append("producto", new Blob([JSON.stringify(producto)], { type: "application/json" }));
+			const imagen = document.getElementById("imagenInput").files[0];
+			if(imagen){
+				formData.append("imagen", imagen);
+			}
+
+			fetch("/productos", {
+			    method: "POST",
+			    body: formData
+			})
+			.then(response => response.text()) // <- esto extrae el texto
+			.then(result => {
+			    alert('✅ ' + result);
+			    location.reload();
+			})
+			.catch(console.error);
+		}
+		
+		function cambiarRuta(checkbox){
+			if (checkbox.checked) {
+				document.getElementById('imagenInput').style.display = 'block';
+		    } else {
+		    	document.getElementById('imagenInput').style.display = 'none';
+		    }
+		}
+	</script>
+</head>
+<body>
+
+	<!-- Incluir el Header -->
+	<div th:replace="fragments/header :: header"></div>
+
+	<main>
+		<br><br><br><br>
+		<div class="table-responsive">
+			<table class="table">
+				<thead class="table-secondary">
+					<tr>
+						<th scope="col">#</th>
+						<th scope="col">Categoria</th>
+						<th scope="col">Descripción</th>
+						<th scope="col">Contenido</th>
+						<th scope="col">Marca</th>
+						<th scope="col">Precio venta</th>
+						<th scope="col">Imagen</th>
+						<th class="text-nowrap" style="width: 1%;">
+							<button type="button" class="btn btn-light" onclick="cargarModal()">Agregar</button>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="producto : ${productos}">
+						<th scope="row">
+							<a href="#" 
+								data-bs-toggle="modal" 
+								data-bs-target="#productoModal"
+								th:onclick="'cargarDatosModal(' + ${producto.idProducto} + ')'" 
+								th:text="${producto.idProducto}"></a>
+						</th>
+						<td th:text="${producto.categoria.descripcion}"></td>
+						<td th:text="${producto.descripcion}"></td>
+						<td th:text="${producto.contenido + ' ' + producto.unidadMedida.codigo}"></td>
+						<td th:text="${producto.marca?.nombre ?: 'Sin marca'}"></td>
+						<td th:text="${'$' + producto.precioVenta}"></td>
+						<td th:if="${producto.rutaImagen != null and !#strings.isEmpty(producto.rutaImagen)}">
+						  <img th:src="@{${producto.rutaImagen}}" alt="imagen" class="img-thumbnail" style="width: 50px; height: auto;">
+						</td>
+						<td th:unless="${producto.rutaImagen != null and !#strings.isEmpty(producto.rutaImagen)}">
+						  
+						</td>
+						<td>
+							<a th:href="@{/productos/eliminar/{id}(id=${producto.idProducto})}" 
+							   onclick="return confirm('¿Estás seguro de que deseas eliminar este producto?')">
+							   <img th:src="@{/img/eliminar.png}" alt="Eliminar" width="30" height="24" class="d-inline-block align-text-top">
+							</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</main>
+
+	<div class="modal fade" id="productoModal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-5" id="exampleModalLabel">Actualizar registro producto: </h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					<form id="productoForm" enctype="multipart/form-data" novalidate>
+						<div class="mb-3">
+							<label for="idProductoInput" class="col-form-label" id="idProductoLabel">No. producto:</label>
+							<input type="text" class="form-control" id="idProductoInput" readonly>
+							
+							<label for="descripcionInput" class="col-form-label">Descripción:</label>
+							<input type="text" class="form-control" id="descripcionInput" required>
+							<div class="invalid-feedback">La descripción es obligatoria.</div>
+							
+							<label for="categoriaSelect" class="col-form-label" >Categoria:</label>
+							<select id="categoriaSelect" name="idCategoria"
+								class="form-select" required>
+								<option value="" disabled>Selecciona una categoría</option>
+							</select>
+							<div class="invalid-feedback">La categoría es obligatoria.</div>
+							
+							<label for="contenidoInput" class="col-form-label">Contenido:</label>
+							<input type="text" class="form-control" id="contenidoInput" required>
+							<div class="invalid-feedback">El contenido es obligatorio.</div>
+							
+							<label for="unidadMedidaSelect" class="col-form-label" >Unidad de medida:</label>
+							<select id="unidadMedidaSelect" name="idUnidadMedida"
+								class="form-select" required>
+								<option value="" disabled selected>Selecciona una unidad de medida</option>
+							</select>
+							<div class="invalid-feedback">La unidad de medida es obligatoria.</div>
+							
+							<label for="marcaSelect" class="col-form-label" >Marca:</label>
+							<select id="marcaSelect" name="idMarca" class="form-select">
+							  <option value="" disabled selected hidden>Selecciona una marca</option>
+							</select>
+							
+							
+							<label for="precioVentaInput" class="col-form-label">Precio de venta:</label>
+							<input type="text" class="form-control" id="precioVentaInput" required>
+							<div class="invalid-feedback">El precio de venta es obligatorio.</div>
+							
+							<label for="imagenInput" class="col-form-label">Imagen:</label>
+							<img id="imagenProducto" alt="imagen" class="img-thumbnail" style="width: 50px; height: auto;">
+							<input class="form-check-input" type="checkbox" onchange="cambiarRuta(this)" id="checkActualizar">
+							<label class="form-check-label" for="checkActualizar" id="labelActualizar">Deseas actualizar la imagen</label>
+							<input class="form-control" type="file" name="imagen" id="imagenInput" accept="image/*"/>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+						    <button type="submit" class="btn btn-primary">Enviar</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Incluir el Footer -->
+	<div th:replace="fragments/footer :: footer"></div>
+
+	<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+	<script th:src="@{/js/utilerias.js}"></script>
+	<script>
+	  (function () {
+	    'use strict'
+	    const form = document.getElementById('productoForm');
+	    form.addEventListener('submit', function (event) {
+	    	console.log("Marca seleccionada:", document.getElementById('marcaSelect').value);
+	      if (!form.checkValidity()) {
+	        event.preventDefault()
+	        event.stopPropagation()
+	      } else {
+	        event.preventDefault(); // Previene recarga automática
+	        enviar(); // Tu función ya existente
+	      }
+	      form.classList.add('was-validated')
+	    }, false)
+	  })()
+	</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8" />
+	<title>Miscelánea Casa Krystal</title>
+	<link th:href="@{/css/bootstrap.min.css}" rel="stylesheet" />
+	<script type="text/javascript">
+		function cargarDatosModal(id) {
+			document.getElementById('exampleModalLabel').textContent = 'Actualizar unidad de medida';
+			document.getElementById("idUnidadMedidaInput").style.display = "block";
+            document.getElementById("idUnidadMedidaLabel").style.display = "block";
+			document.getElementById("codigoInput").style.display = "block";
+            document.getElementById("codigoLabel").style.display = "block";
+		    // Realizar una petición al backend para obtener los datos
+		     fetch('/unidadesmedidas/' + id)
+		    	.then(response => response.json())
+		        .then(data => {
+		            // Llenar el modal con la información obtenida
+		        	document.getElementById('idUnidadMedidaInput').value = data.idUnidadMedida;
+		        	document.getElementById('codigoInput').value = data.codigo;
+		            document.getElementById('nombreInput').value = data.nombreUnidad;
+		        })
+		        .catch(error => console.error('Error al cargar los datos:', error));
+		}
+		function cargarModal() {
+			document.getElementById('idUnidadMedidaInput').value = '';
+            document.getElementById('codigoInput').value = '';
+            document.getElementById('nombreInput').value = '';
+            document.getElementById('exampleModalLabel').textContent = 'Agregar unidad de medida';
+            document.getElementById("idUnidadMedidaInput").style.display = "none";
+            document.getElementById("idUnidadMedidaLabel").style.display = "none";
+            document.getElementById("codigoInput").readOnly = false;
+            const modalElement = document.getElementById('unidadmedidaModal');
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            return;
+		}
+		function enviar() {
+            const data = {
+            	idUnidadMedida: document.getElementById('idUnidadMedidaInput').value,
+            	codigo: document.getElementById('codigoInput').value,
+            	nombreUnidad: document.getElementById('nombreInput').value
+            };
+
+            fetch('/unidadesmedidas', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Error en la solicitud');
+                return response.text();
+            })
+            .then(result => {
+                alert('✅ ' + result);
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Ocurrió un error al enviar los datos.');
+            });
+        }
+	</script>
+</head>
+<body>
+
+	<!-- Incluir el Header -->
+	<div th:replace="fragments/header :: header"></div>
+
+	<main>
+		<br><br><br><br>
+		<div class="table-responsive">
+			<table class="table">
+				<thead class="table-secondary">
+					<tr>
+						<th scope="col">#</th>
+						<th scope="col">Código</th>
+						<th scope="col">Nombre</th>
+						<th class="text-nowrap" style="width: 1%;">
+							<button type="button" class="btn btn-light" onclick="cargarModal()">Agregar</button>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="unidadmedida : ${unidadesmedida}">
+						<th scope="row">
+							<a href="#" 
+								data-bs-toggle="modal" 
+								data-bs-target="#unidadmedidaModal"
+								th:onclick="'cargarDatosModal(' + ${unidadmedida.idUnidadMedida} + ')'" 
+								th:text="${unidadmedida.idUnidadMedida}"></a>
+						</th>
+						<td th:text="${unidadmedida.codigo}"></td>
+						<td th:text="${unidadmedida.nombreUnidad}"></td>
+						<td>
+							<a th:href="@{/unidadesmedidas/eliminar/{id}(id=${unidadmedida.idUnidadMedida})}" 
+							   onclick="return confirm('¿Estás seguro de que deseas eliminar esta unidad de medida?')">
+							   <img th:src="@{/img/eliminar.png}" alt="Eliminar" width="30" height="24" class="d-inline-block align-text-top">
+							</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</main>
+
+	<div class="modal fade" id="unidadmedidaModal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-5" id="exampleModalLabel">Actualizar registro unidad de medida: </h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+				</div>
+				<div class="modal-body">
+					<form>
+						<div class="mb-3">
+							<label for="idUnidadMedidaInput" class="col-form-label" id="idUnidadMedidaLabel">No. unidad medida:</label>
+							<input type="text" class="form-control" id="idUnidadMedidaInput" readonly>
+							
+							<label for="codigoInput" class="col-form-label" id="codigoLabel">Código:</label>
+							<input type="text" class="form-control" id="codigoInput" readonly>
+							
+							<label for="nombreInput" class="col-form-label">Nombre de unidad de medida:</label>
+							<input type="text" class="form-control" id="nombreInput">
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary"
+						data-bs-dismiss="modal">Cerrar</button>
+					<button type="button" class="btn btn-primary" onclick="enviar()">Enviar</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Incluir el Footer -->
+	<div th:replace="fragments/footer :: footer"></div>
+
+	<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>
